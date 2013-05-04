@@ -18,7 +18,11 @@ setup(name='pyramid_auth/',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          # -*- Extra requirements: -*-
+          'pyramid',
+          'tw2.core',
+          'tw2.forms',
+          'mako',
+          'paste',
       ],
       entry_points="""
       # -*- Entry points: -*-

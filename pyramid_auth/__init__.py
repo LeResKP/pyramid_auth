@@ -4,15 +4,13 @@ from pyramid.httpexceptions import (
     HTTPForbidden,
     )
 from pyramid.security import (
+    unauthenticated_userid,
     remember,
     forget,
-    )
+)
 from urllib import urlencode
 import tw2.forms as twf, tw2.core as twc
 from paste.util.import_string import eval_import
-
-# from .. import security, validators
-
 
 
 class UserExists(twc.Validator):
@@ -24,7 +22,7 @@ class UserExists(twc.Validator):
         'mismatch': 'Please check your posted data.',
     }
 
-    def validate_python(self, value, state):
+    def _validate_python(self, value, state):
         super(UserExists, self)._validate_python(value, state)
         login = value[self.login]
         password = value[self.password]
@@ -83,7 +81,7 @@ def login(context, request):
         )
 
 
-@view_config(name='logout')
+@view_config(route_name='logout')
 def logout(context, request):
     headers = forget(request)
     location = request.params.get('next', request.application_url)
@@ -96,7 +94,7 @@ def forbidden(context, request):
 
 
 def forbidden_redirect(context, request):
-    if request.user:
+    if unauthenticated_userid(request):
         # The user is logged but doesn't have the right permission
         location = request.route_url('forbidden')
     else:

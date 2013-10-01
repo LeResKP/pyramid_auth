@@ -116,6 +116,7 @@ def main(global_config, **settings):
     """
     config = Configurator(settings=settings)
     config.include('pyramid_auth')
+    config.include('pyramid_mako')
     config.add_route(
         'fake_forbidden',
         '/fake_forbidden',

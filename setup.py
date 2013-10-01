@@ -32,13 +32,23 @@ setup(name='pyramid_auth',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
+          'pyramid_mako',
           'pyramid',
           'tw2.core',
           'tw2.forms',
           'mako',
           'paste',
+          'sieve',
       ],
       test_suite='nose.collector',
+      tests_require=[
+          'nose',
+          'WebTest',
+          'FormEncode',
+          'BeautifulSoup',
+          'strainer',
+          'sieve',
+      ],
       entry_points="""
       # -*- Entry points: -*-
       """,

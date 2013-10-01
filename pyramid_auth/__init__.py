@@ -2,14 +2,20 @@ from pyramid.view import view_config
 from pyramid.httpexceptions import (
     HTTPFound,
     HTTPForbidden,
-    )
+)
 from pyramid.security import (
     unauthenticated_userid,
     remember,
     forget,
 )
+from pyramid.authentication import (
+    AuthTktAuthenticationPolicy,
+    RemoteUserAuthenticationPolicy,
+)
+from pyramid.authorization import ACLAuthorizationPolicy
 from urllib import urlencode
-import tw2.forms as twf, tw2.core as twc
+import tw2.forms as twf
+import tw2.core as twc
 from paste.util.import_string import eval_import
 
 
@@ -40,10 +46,10 @@ class UserExists(twc.Validator):
 
 
 def create_login_form(settings):
-    func_str = settings.get('pyramid_auth.validate_function')
+    func_str = settings.get('authentication.validate_function')
     if not func_str:
-        raise AttributeError, ('pyramid_auth.validate_function '
-                               'is not defined in the conf')
+        raise AttributeError('authentication.validate_function '
+                             'is not defined.')
     func = eval_import(func_str)
 
     class LoginForm(twf.TableForm):
@@ -55,6 +61,35 @@ def create_login_form(settings):
                                password='password',
                                validate_func=func)
     return LoginForm
+
+
+def str_to_bool(s):
+    if s == 'false':
+        return False
+    if s == 'true':
+        return True
+    raise Exception('Unable to cast as bool %s' % s)
+
+
+def get_cookie_policy(key, debug, callback):
+    if not key:
+        raise Exception('authentication.key not defined')
+
+    return AuthTktAuthenticationPolicy(
+        key,
+        callback=callback,
+        debug=debug,
+        hashalg='sha512',
+    )
+
+
+def get_remote_user_policy(key, debug, callback):
+    key = key or 'REMOTE_USER'
+    return RemoteUserAuthenticationPolicy(
+        key,
+        callback=callback,
+        debug=debug,
+    )
 
 
 @view_config(route_name='login', renderer='auth/login.mak')
@@ -71,14 +106,12 @@ def login(context, request):
         try:
             data = widget.validate(request.POST)
             headers = remember(request, data['login'])
-            return HTTPFound(location = next,
-                             headers = headers)
+            return HTTPFound(location=next,
+                             headers=headers)
         except twc.ValidationError, e:
             widget = e.widget
 
-    return dict(
-        widget=widget,
-        )
+    return dict(widget=widget)
 
 
 @view_config(route_name='logout')
@@ -104,6 +137,28 @@ def forbidden_redirect(context, request):
 
 
 def includeme(config):
+    settings = config.registry.settings
+
+    func_str = settings.get('authentication.callback')
+    if not func_str:
+        raise AttributeError('authentication.callback '
+                             'is not defined in the conf')
+    callback = eval_import(func_str)
+    policy = settings.get('authentication.policy') or 'cookie'
+    debug = str_to_bool(settings.get('authentication.debug') or 'false')
+    key = config.registry.settings.get('authentication.key')
+
+    if policy == 'cookie':
+        authentication_policy = get_cookie_policy(key, debug, callback)
+    elif policy == 'remote_user':
+        authentication_policy = get_remote_user_policy(key, debug, callback)
+    else:
+        raise Exception('Policy not supported: %s' % policy)
+
+    authorization_policy = ACLAuthorizationPolicy()
+    config.set_authentication_policy(authentication_policy)
+    config.set_authorization_policy(authorization_policy)
+
     sqladmin_dir = 'pyramid_auth:templates'
     if type(config.registry.settings['mako.directories']) is list:
         config.registry.settings['mako.directories'] += [sqladmin_dir]

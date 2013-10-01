@@ -1,9 +1,16 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.1'
+# Hack to prevent TypeError: 'NoneType' object is not callable error
+# on exit of python setup.py test
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-setup(name='pyramid_auth/',
+version = '0.2'
+
+setup(name='pyramid_auth',
       version=version,
       description="Simple pyramid authentication system",
       long_description=open('README.rst').read(),
@@ -31,6 +38,7 @@ setup(name='pyramid_auth/',
           'mako',
           'paste',
       ],
+      test_suite='nose.collector',
       entry_points="""
       # -*- Entry points: -*-
       """,

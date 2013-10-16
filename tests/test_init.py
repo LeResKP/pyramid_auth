@@ -4,8 +4,11 @@ from tw2.core.validation import ValidationError
 from webtest import TestApp
 from pyramid import testing
 from pyramid.config import Configurator
+from pyramid.security import remember
 from pyramid.view import view_config
 from pyramid_auth import *
+import pyramid_auth.forms as forms
+import pyramid_auth.utils as utils
 
 
 def validate_func(*args, **kw):
@@ -15,10 +18,13 @@ def validate_func(*args, **kw):
 class TestUserExists(unittest.TestCase):
 
     def test__validate_python(self):
-        validate_func = lambda login, pwd: pwd == 'secret'
-        v = UserExists(login='login',
-                       password='pwd',
-                       validate_func=validate_func)
+        validate_func = lambda request, login, pwd: pwd == 'secret'
+        v = forms.UserExists(
+            login='login',
+            password='pwd',
+            validate_func=validate_func,
+            request=None
+        )
         dic = {
             'login': 'Bob',
             'pwd': 'secret',
@@ -26,10 +32,13 @@ class TestUserExists(unittest.TestCase):
         v._validate_python(dic, None)
 
     def test__validate_python_invalid(self):
-        validate_func = lambda login, pwd: pwd == 'secret'
-        v = UserExists(login='login',
-                       password='pwd',
-                       validate_func=validate_func)
+        validate_func = lambda request, login, pwd: pwd == 'secret'
+        v = forms.UserExists(
+            login='login',
+            password='pwd',
+            validate_func=validate_func,
+            request=None
+        )
         dic = {
             'login': 'Bob',
             'pwd': 'secret1',
@@ -41,10 +50,13 @@ class TestUserExists(unittest.TestCase):
             self.assertEqual(str(e), 'Please check your posted data.')
 
     def test__validate_python_no_validation(self):
-        validate_func = lambda login, pwd: pwd == 'secret'
-        v = UserExists(login='login',
-                       password='pwd',
-                       validate_func=validate_func)
+        validate_func = lambda request, login, pwd: pwd == 'secret'
+        v = forms.UserExists(
+            login='login',
+            password='pwd',
+            validate_func=validate_func,
+            request=None
+        )
         dic = {
             'login': twc.validation.Invalid,
             'pwd': 'secret1',
@@ -54,43 +66,17 @@ class TestUserExists(unittest.TestCase):
 
 class TestFunctions(unittest.TestCase):
 
-    def test_create_login_form_no_validate_function(self):
-        try:
-            f = create_login_form({})
-            assert(False)
-        except AttributeError, e:
-            self.assertEqual(str(e), ('authentication.validate_function '
-                                      'is not defined.'))
-
     def test_create_login_form(self):
-        f = create_login_form({'authentication.validate_function':
-                               'tests.test_init.validate_func'})
+        f = forms.create_login_form(None, validate_func)
         self.assertTrue(f)
 
     def test_str_to_bool(self):
-        self.assertEqual(str_to_bool('false'), False)
-        self.assertEqual(str_to_bool('true'), True)
+        self.assertEqual(utils.str_to_bool('false'), False)
+        self.assertEqual(utils.str_to_bool('true'), True)
         try:
-            str_to_bool('plop')
+            utils.str_to_bool('plop')
         except Exception, e:
             self.assertEqual(str(e), 'Unable to cast as bool plop')
-
-    def test_get_cookie_policy(self):
-        res = get_cookie_policy('key', False, lambda: [])
-        self.assertTrue(res)
-
-    def test_get_cookie_policy_no_key(self):
-        try:
-            res = get_cookie_policy(None, False, lambda: [])
-        except Exception, e:
-            self.assertEqual(str(e), 'authentication.key not defined')
-
-    def test_get_remote_user_policy(self):
-        res = get_remote_user_policy(None, False, lambda: [])
-        self.assertEqual(res.environ_key, 'REMOTE_USER')
-
-        res = get_remote_user_policy('KEY', False, lambda: [])
-        self.assertEqual(res.environ_key, 'KEY')
 
 
 def callback(*args, **kw):
@@ -192,7 +178,7 @@ class TestAuthCookie(BasicAuth):
             ('Location', 'http://localhost/forbidden') in res._headerlist)
 
 
-class TestAuthRemoteUser(BasicAuth):
+class TestAuthRemoteUser(unittest.TestCase):
 
     def setUp(self):
         self.settings = SETTINGS.copy()
@@ -202,7 +188,6 @@ class TestAuthRemoteUser(BasicAuth):
         self.app = twc.middleware.TwMiddleware(self.app)
         self.testapp = TestApp(self.app)
 
-    def test_forbidden_redirect(self):
-        res = self.testapp.get('/fake_forbidden', extra_environ={'REMOTE_USER': 'Bob'} , status=302)
-        self.assertTrue(
-            ('Location', 'http://localhost/forbidden') in res._headerlist)
+    def test_forbidden(self):
+        res = self.testapp.get('/fake_forbidden', extra_environ={'REMOTE_USER': 'Bob'} , status=200)
+        self.assertTrue("You don't have the right permissions." in res)

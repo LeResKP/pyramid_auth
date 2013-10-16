@@ -70,14 +70,6 @@ class TestFunctions(unittest.TestCase):
         f = forms.create_login_form(None, validate_func)
         self.assertTrue(f)
 
-    def test_str_to_bool(self):
-        self.assertEqual(utils.str_to_bool('false'), False)
-        self.assertEqual(utils.str_to_bool('true'), True)
-        try:
-            utils.str_to_bool('plop')
-        except Exception, e:
-            self.assertEqual(str(e), 'Unable to cast as bool plop')
-
 
 def callback(*args, **kw):
     return []

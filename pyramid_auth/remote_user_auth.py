@@ -1,24 +1,25 @@
 from pyramid.authentication import RemoteUserAuthenticationPolicy
 from paste.util.import_string import eval_import
 
-from .utils import str_to_bool
+from .utils import str_to_bool, parse_settings
 from.views import base_includeme
 
 
+SETTINGS = {
+    'remote_user': [
+        ('environ_key', None, False, None),
+        ('debug', str_to_bool, False, None),
+        ('callback', eval_import, False, None),
+    ]
+}
+
+
 def includeme(config):
-    settings = config.registry.settings
-    func_str = settings.get('authentication.callback')
-    if not func_str:
-        raise AttributeError('authentication.callback '
-                             'is not defined in the conf')
-    callback = eval_import(func_str)
-    debug = str_to_bool(settings.get('authentication.debug') or 'false')
-    key = config.registry.settings.get('authentication.key') or 'REMOTE_USER'
+    settings = parse_settings(config.registry.settings, SETTINGS,
+                              'remote_user', 'authentication')
     config.set_authentication_policy(
         RemoteUserAuthenticationPolicy(
-            key,
-            callback=callback,
-            debug=debug,
+            **settings
         )
     )
     base_includeme(config)

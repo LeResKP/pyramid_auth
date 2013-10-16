@@ -1,7 +1,7 @@
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from paste.util.import_string import eval_import
 
-from .utils import str_to_bool
+from .utils import str_to_bool, parse_settings
 from .views import BaseLoginView, login_includeme
 
 
@@ -9,30 +9,38 @@ class CookieView(BaseLoginView):
 
     def get_validate_func(self):
         settings = self.request.registry.settings
-        func_str = settings.get('authentication.validate_function')
+        key = 'authentication.cookie.validate_function'
+        func_str = settings.get(key)
         if not func_str:
-            raise AttributeError('authentication.validate_function '
-                                 'is not defined.')
+            raise AttributeError('%s is not defined.' % key)
         return eval_import(func_str)
 
 
+SETTINGS = {
+    'cookie': [
+        ('secret', None, True, None),
+        ('callback', eval_import, False, None),
+        ('cookie_name', None, False, None),
+        ('secure', str_to_bool, False, None),
+        ('include_ip', str_to_bool, False, None),
+        ('timeout', int, False, None),
+        ('reissue_time', int, False, None),
+        ('max_age', int, False, None),
+        ('path', None, False, None),
+        ('http_only', str_to_bool, False, None),
+        ('wild_domain', str_to_bool, False, None),
+        ('debug', str_to_bool, False, None),
+        ('hashalg', None, False, 'sha512')
+    ]
+}
+
+
 def includeme(config):
-    settings = config.registry.settings
-    func_str = settings.get('authentication.callback')
-    if not func_str:
-        raise AttributeError('authentication.callback '
-                             'is not defined in the conf')
-    callback = eval_import(func_str)
-    debug = str_to_bool(settings.get('authentication.debug') or 'false')
-    key = config.registry.settings.get('authentication.key')
-    if not key:
-        raise AttributeError('authentication.key not defined in the conf')
+    settings = parse_settings(config.registry.settings, SETTINGS, 'cookie',
+                              'authentication')
     config.set_authentication_policy(
         AuthTktAuthenticationPolicy(
-            key,
-            callback=callback,
-            debug=debug,
-            hashalg='sha512',
+            **settings
         )
     )
     login_includeme(CookieView, config)

@@ -47,7 +47,7 @@ def get_ldap_groups(dn, request):
     connector = get_ldap_connector(request)
     group_list = connector.user_groups(dn)
     if group_list is None:
-        return None
+        return []
     lis = [('ldap:%s' % attrs.get('cn', [dn_])[0]).encode('utf-8')
            for dn_, attrs in group_list]
     return lis

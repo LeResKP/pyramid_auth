@@ -4,6 +4,10 @@ from webtest import TestApp
 from pyramid import testing
 from pyramid.config import Configurator
 from pyramid_auth import *
+from pyramid_auth.cookie_auth import CookieView
+from pyramid_auth.views import BaseLoginView
+from pyramid_auth.ldap_auth import LdapView
+from pyramid_auth.ldap_auth import validate_ldap
 from pyramid.security import Authenticated, Allow, remember
 from pyramid.view import view_config
 from mock import patch, MagicMock
@@ -162,6 +166,47 @@ class TestAuthRemoteUserCallback(unittest.TestCase):
         self.assertTrue("the user is editor" in res)
 
 
+class TestAuthCookieFunction(unittest.TestCase):
+
+    def test_cookie_auth(self):
+        settings = {}
+        settings['authentication.policy'] = 'cookie'
+        config = Configurator(settings=settings)
+        try:
+            includeme(config)
+            assert(False)
+        except Exception, e:
+            self.assertEqual(str(e),
+                             'authentication.cookie.secret not defined')
+
+    def test_get_validate_func(self):
+        settings = {}
+        settings['authentication.policy'] = 'cookie'
+        settings['authentication.cookie.secret'] = 'secret'
+        settings['mako.directories'] = 'pyramid_auth:templates'
+        config = Configurator(settings=settings)
+        includeme(config)
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = CookieView(None, request)
+        try:
+            view.login()
+            assert(False)
+        except Exception, e:
+            self.assertEqual(
+                str(e),
+                'authentication.cookie.validate_function is not defined.')
+
+        settings['authentication.cookie.validate_function'] = 'tests.test_auth.validate_func'
+        config = Configurator(settings=settings)
+        includeme(config)
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = CookieView(None, request)
+        res = view.login()
+        self.assertTrue(res)
+
+
 class TestAuthCookieLogin(unittest.TestCase):
     SETTINGS = {
         'authentication.policy': 'cookie',
@@ -298,6 +343,57 @@ class TestAuthCookieCallback(unittest.TestCase):
         self.assertTrue("the user is editor" in res)
 
 
+class TestAuthLdapFunction(unittest.TestCase):
+
+    def test_validate_ldap(self):
+        mock = MagicMock()
+        mock.authenticate = MagicMock(return_value=False)
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = validate_ldap(None, 'Bob', 'secret')
+            self.assertEqual(res, False)
+
+        mock.authenticate = MagicMock(return_value=True)
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = validate_ldap(None, 'Bob', 'secret')
+            self.assertEqual(res, True)
+
+    def test_get_validate_func(self):
+        settings = {}
+        settings['authentication.policy'] = 'ldap'
+        settings['authentication.ldap.cookie.secret'] = 'secret'
+        settings.update({
+            'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+            'authentication.ldap.setup.base_dn': 'base_dn',
+
+            'authentication.ldap.login.base_dn': 'base_dn',
+            'authentication.ldap.login.filter_tmpl': 'filter',
+
+            'authentication.ldap.groups.base_dn': 'base_dn',
+            'authentication.ldap.groups.filter_tmpl': 'filter',
+        })
+        settings['mako.directories'] = 'pyramid_auth:templates'
+        config = Configurator(settings=settings)
+        config.include('pyramid_ldap')
+        includeme(config)
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = LdapView(None, request)
+        func = view.get_validate_func()
+        self.assertEqual(func, validate_ldap)
+
+        settings['authentication.ldap.validate_function'] = 'tests.test_auth.validate_func'
+        config = Configurator(settings=settings)
+        config.include('pyramid_ldap')
+        includeme(config)
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = LdapView(None, request)
+        self.assertEqual(func, validate_ldap)
+        self.assertTrue(func, validate_func)
+
+
 class TestAuthLdapLogin(unittest.TestCase):
     SETTINGS = {
         'authentication.policy': 'ldap',
@@ -384,6 +480,16 @@ class TestAuthLdap(unittest.TestCase):
     def test_permission(self):
         mock = MagicMock()
         mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/authenticated',
+                                   headers=self.__remember(),
+                                   status=200)
+            self.assertTrue("the user is authenticated" in res)
+
+    def test_permission_no_group(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=None)
         with patch('pyramid_auth.ldap_auth.get_ldap_connector',
                    return_value=mock):
             res = self.testapp.get('/authenticated',
@@ -491,3 +597,13 @@ class TestAuthLdapCallback(unittest.TestCase):
                                    headers=self.__remember('Bob'),
                                    status=200)
             self.assertTrue("the user is ldap" in res)
+
+
+class TestBaseLoginView(unittest.TestCase):
+
+    def test_get_validate_func(self):
+        try:
+            BaseLoginView(None, None).get_validate_func()
+            assert(False)
+        except NotImplementedError:
+            pass

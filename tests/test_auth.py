@@ -6,6 +6,7 @@ from pyramid.config import Configurator
 from pyramid_auth import *
 from pyramid.security import Authenticated, Allow, remember
 from pyramid.view import view_config
+from mock import patch, MagicMock
 
 
 def validate_func(request, login, password):
@@ -25,11 +26,17 @@ def authenticated(context, request):
 def edit(context, request):
     return {'content': 'the user is editor'}
 
+@view_config(route_name='ldap', renderer='json',
+             permission='ldap')
+def ldap(context, request):
+    return {'content': 'the user is ldap'}
+
 
 class RootFactory(object):
     __acl__ = [
         (Allow, Authenticated, 'authenticated'),
         (Allow, 'editor', 'editor'),
+        (Allow, 'ldap:user', 'ldap'),
     ]
 
     def __init__(self, request):
@@ -48,6 +55,7 @@ def main(global_config, **settings):
     settings = settings.copy()
     settings['mako.directories'] = 'pyramid_auth:templates'
     config = Configurator(settings=settings, root_factory=RootFactory)
+    config.include('pyramid_ldap')
     config.include('pyramid_auth')
     config.include('pyramid_mako')
     config.add_route(
@@ -61,6 +69,10 @@ def main(global_config, **settings):
     config.add_route(
         'editor',
         '/editor',
+    )
+    config.add_route(
+        'ldap',
+        '/ldap',
     )
     config.scan()
     return config.make_wsgi_app()
@@ -284,3 +296,198 @@ class TestAuthCookieCallback(unittest.TestCase):
                                headers=self.__remember('Bob'),
                                status=200)
         self.assertTrue("the user is editor" in res)
+
+
+class TestAuthLdapLogin(unittest.TestCase):
+    SETTINGS = {
+        'authentication.policy': 'ldap',
+        'authentication.ldap.cookie.secret': 'secret',
+        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+
+        'authentication.ldap.login.base_dn': 'base_dn',
+        'authentication.ldap.login.filter_tmpl': 'filter',
+
+        'authentication.ldap.groups.base_dn': 'base_dn',
+        'authentication.ldap.groups.filter_tmpl': 'filter',
+        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
+    }
+
+    def setUp(self):
+        self.app = main({}, **self.SETTINGS)
+        self.app = twc.middleware.TwMiddleware(self.app)
+        self.testapp = TestApp(self.app)
+
+    def test_login(self):
+        res = self.testapp.get('/login', status=200)
+        self.assertTrue('<form' in res)
+
+    def test_login_post_invalid(self):
+        res = self.testapp.post('/login', {'login': 'Bob'}, status=200)
+        self.assertTrue('<form' in res)
+        self.assertTrue('Enter a value' in res)
+
+    def test_login_post_bad_user(self):
+        res = self.testapp.post('/login',
+                                {'login': 'Fred', 'password': 'secret'},
+                                status=200)
+        self.assertTrue('<form' in res)
+        self.assertTrue('Please check your posted data.' in res)
+
+    def test_login_post(self):
+        res = self.testapp.post('/login',
+                                {'login': 'Bob', 'password': 'secret'},
+                                status=302)
+        self.assertTrue(
+            ('Location', 'http://localhost/')
+            in res._headerlist)
+        # TODO: add test to check the cookies are set
+
+    def test_logout(self):
+        res = self.testapp.get('/logout', status=302)
+        self.assertTrue(
+            ('Location', 'http://localhost')
+            in res._headerlist)
+
+        res = self.testapp.get('/logout',
+                               {'next': 'http://www.lereskp.fr'},
+                               status=302)
+        self.assertTrue(
+            ('Location', 'http://www.lereskp.fr')
+            in res._headerlist)
+
+
+class TestAuthLdap(unittest.TestCase):
+    SETTINGS = {
+        'authentication.policy': 'ldap',
+        'authentication.ldap.cookie.secret': 'secret',
+        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+
+        'authentication.ldap.login.base_dn': 'base_dn',
+        'authentication.ldap.login.filter_tmpl': 'filter',
+
+        'authentication.ldap.groups.base_dn': 'base_dn',
+        'authentication.ldap.groups.filter_tmpl': 'filter',
+        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
+    }
+
+    def setUp(self):
+        self.app = main({}, **self.SETTINGS)
+        self.app = twc.middleware.TwMiddleware(self.app)
+        self.testapp = TestApp(self.app)
+
+    def __remember(self):
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = self.app.app.registry
+        headers = remember(request, 'Bob')
+        return {'Cookie': headers[0][1].split(';')[0]}
+
+    def test_permission(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/authenticated',
+                                   headers=self.__remember(),
+                                   status=200)
+            self.assertTrue("the user is authenticated" in res)
+
+    def test_no_permission(self):
+        res = self.testapp.get('/authenticated', status=302)
+        self.assertTrue(
+            ('Location',
+             ('http://localhost/login?next='
+              'http%3A%2F%2Flocalhost%2Fauthenticated'))
+            in res._headerlist)
+
+    def test_no_editor(self):
+        res = self.testapp.get('/editor', status=302)
+        self.assertTrue(
+            ('Location',
+             ('http://localhost/login?next='
+              'http%3A%2F%2Flocalhost%2Feditor'))
+            in res._headerlist)
+
+    def test_forbidden(self):
+        res = self.testapp.get('/forbidden', status=200)
+        self.assertTrue("You don't have the right permissions." in res)
+
+
+class TestAuthLdapCallback(unittest.TestCase):
+    SETTINGS = {
+        'authentication.policy': 'ldap',
+        'authentication.ldap.cookie.secret': 'secret',
+        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+
+        'authentication.ldap.login.base_dn': 'base_dn',
+        'authentication.ldap.login.filter_tmpl': 'filter',
+
+        'authentication.ldap.groups.base_dn': 'base_dn',
+        'authentication.ldap.groups.filter_tmpl': 'filter',
+        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
+        'authentication.ldap.callback': 'tests.test_auth.callback',
+    }
+
+    def setUp(self):
+        self.app = main({}, **self.SETTINGS)
+        self.app = twc.middleware.TwMiddleware(self.app)
+        self.testapp = TestApp(self.app)
+
+    def __remember(self, name):
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = self.app.app.registry
+        headers = remember(request, name)
+        return {'Cookie': headers[0][1].split(';')[0]}
+
+    def test_permission(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/authenticated',
+                                   headers=self.__remember('Bob'),
+                                   status=200)
+            self.assertTrue("the user is authenticated" in res)
+
+    def test_no_editor(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/editor',
+                                   headers=self.__remember('Fred'),
+                                   status=302)
+            self.assertTrue(
+                ('Location', ('http://localhost/forbidden'))
+                in res._headerlist)
+
+    def test_editor(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/editor',
+                                   headers=self.__remember('Bob'),
+                                   status=200)
+            self.assertTrue("the user is editor" in res)
+
+    def test_no_ldap(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/ldap',
+                                   headers=self.__remember('Bob'),
+                                   status=302)
+            self.assertTrue(
+                ('Location', ('http://localhost/forbidden'))
+                in res._headerlist)
+
+    def test_ldap(self):
+        mock = MagicMock()
+        mock.user_groups = MagicMock(return_value=[('dn_ldap', {'cn': ['user']})])
+        with patch('pyramid_auth.ldap_auth.get_ldap_connector',
+                   return_value=mock):
+            res = self.testapp.get('/ldap',
+                                   headers=self.__remember('Bob'),
+                                   status=200)
+            self.assertTrue("the user is ldap" in res)

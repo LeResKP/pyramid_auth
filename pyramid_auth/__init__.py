@@ -6,7 +6,7 @@ def includeme(config):
     settings = config.registry.settings
     policy = settings.get('authentication.policy') or 'cookie'
 
-    if policy not in ['cookie', 'remote_user']:
+    if policy not in ['cookie', 'remote_user', 'ldap']:
         raise Exception('Policy not supported: %s' % policy)
 
     mod = eval_import('pyramid_auth.%s_auth' % policy)

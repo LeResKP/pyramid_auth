@@ -10,8 +10,20 @@ pyramid_auth's documentation!
 Introduction
 ************
 
-This is a plugin for pyramid which provides a simple authentication system. The idea was to use exising authentication's policies to provide multiple support. Currently this plugin support: cookie, remote_user and ldap.
+This is a plugin for pyramid which provides a simple authentication system. The idea was to use exising authentication's policies to provide multiple support. Currently this plugin support cookie, remote_user and ldap policies.
 
+
+For the cookie and ldap policies it generates the form and the urls automatically:
+    * /login: display the login form
+    * /logout: logout the user
+    * /forbidden: the user is redirected to this page when he is logged but doesn't have the right permission to see a page.
+
+.. note::
+
+    If you want to change the rendering of the template to include your design you can:
+
+    * Create a template in the folder templates/auth of your project named base.mak. Each templates (login, forbidden) inherit from it.
+    * Create the login.mak and/or forbidden.mak templates in the folder templates/auth to overwrite the default ones.
 
 Cookie policy
 *************

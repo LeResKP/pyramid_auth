@@ -48,6 +48,7 @@ setup(name='pyramid_auth',
           'BeautifulSoup',
           'strainer',
           'sieve',
+          'pyramid_ldap',
       ],
       entry_points="""
       # -*- Entry points: -*-

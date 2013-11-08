@@ -535,6 +535,8 @@ Groups
 
     is a string which can be used as an LDAP filter: it should contain the replacement value %(userdn)s.
 
+.. important:: In pyramid_ldap userdn represent the user distinguished name. In pyramid_auth it represents the user uid. So you should make your filter_tmpl according to the user uid.
+
 ``authentication.ldap.groups.scope``
 
     is any valid LDAP scope value (e.g. ldap.SCOPE_SUBTREE). cache_period is the number of seconds to cache groups search results; if it is 0, groups search results will not be cached.

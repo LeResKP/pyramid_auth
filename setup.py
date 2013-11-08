@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass
 
-version = '0.2.1'
+version = '0.3'
 
 setup(name='pyramid_auth',
       version=version,
@@ -48,6 +48,8 @@ setup(name='pyramid_auth',
           'BeautifulSoup',
           'strainer',
           'sieve',
+          'pyramid_ldap',
+          'mock'
       ],
       entry_points="""
       # -*- Entry points: -*-

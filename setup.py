@@ -49,6 +49,7 @@ setup(name='pyramid_auth',
           'strainer',
           'sieve',
           'pyramid_ldap',
+          'mock'
       ],
       entry_points="""
       # -*- Entry points: -*-

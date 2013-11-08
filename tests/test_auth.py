@@ -233,7 +233,8 @@ class TestAuthCookieLogin(unittest.TestCase):
                                 {'login': 'Fred', 'password': 'secret'},
                                 status=200)
         self.assertTrue('<form' in res)
-        self.assertTrue('Please check your posted data.' in res)
+        self.assertTrue('Login failed. Please check your '
+                        'credentials and try again.' in res)
 
     def test_login_post(self):
         res = self.testapp.post('/login',
@@ -427,7 +428,8 @@ class TestAuthLdapLogin(unittest.TestCase):
                                 {'login': 'Fred', 'password': 'secret'},
                                 status=200)
         self.assertTrue('<form' in res)
-        self.assertTrue('Please check your posted data.' in res)
+        self.assertTrue('Login failed. Please check your '
+                        'credentials and try again.' in res)
 
     def test_login_post(self):
         res = self.testapp.post('/login',

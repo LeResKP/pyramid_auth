@@ -8,7 +8,8 @@ class UserExists(twc.Validator):
     """
     __unpackargs__ = ('login', 'password', 'validate_func', 'request')
     msgs = {
-        'mismatch': 'Please check your posted data.',
+        'mismatch': ('Login failed. Please check your '
+                     'credentials and try again.'),
     }
 
     def _validate_python(self, value, state):

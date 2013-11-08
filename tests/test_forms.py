@@ -41,7 +41,8 @@ class TestUserExists(unittest.TestCase):
             v._validate_python(dic, None)
             assert(False)
         except ValidationError, e:
-            self.assertEqual(str(e), 'Please check your posted data.')
+            self.assertEqual(str(e), 'Login failed. Please check your '
+                                     'credentials and try again.')
 
     def test__validate_python_no_validation(self):
         validate_func = lambda request, login, pwd: pwd == 'secret'

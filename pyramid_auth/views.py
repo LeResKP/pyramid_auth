@@ -27,7 +27,8 @@ class BaseView(object):
 class BaseLoginView(BaseView):
 
     def get_validate_func(self):
-        raise NotImplementedError
+        return self.request.registry.settings[
+            'authentication.validate_function']
 
     def _get_next_location(self):
         login_url = self.request.route_url('login')
@@ -73,7 +74,8 @@ def base_includeme(config):
         renderer='auth/forbidden.mak')
 
 
-def login_includeme(ViewClass, config):
+def login_includeme(config):
+    ViewClass = BaseLoginView
     config.add_view(
         ViewClass,
         attr='forbidden_redirect',

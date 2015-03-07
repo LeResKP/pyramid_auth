@@ -19,6 +19,7 @@ class TestIncludeme(unittest.TestCase):
         settings = {}
         settings['authentication.policy'] = 'cookie'
         settings['authentication.cookie.secret'] = 'secret'
+        settings['authentication.cookie.validate_function'] = 'tests.test_auth.validate_func'
         settings['mako.directories'] = 'pkg:templates'
         config = Configurator(settings=settings)
         includeme(config)

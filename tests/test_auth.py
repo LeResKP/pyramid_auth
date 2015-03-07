@@ -4,9 +4,7 @@ from webtest import TestApp
 from pyramid import testing
 from pyramid.config import Configurator
 from pyramid_auth import *
-from pyramid_auth.cookie_auth import CookieView
 from pyramid_auth.views import BaseLoginView
-from pyramid_auth.ldap_auth import LdapView
 from pyramid_auth.ldap_auth import validate_ldap
 from pyramid.security import Authenticated, Allow, remember
 from pyramid.view import view_config
@@ -185,24 +183,31 @@ class TestAuthCookieFunction(unittest.TestCase):
         settings['authentication.cookie.secret'] = 'secret'
         settings['mako.directories'] = 'pyramid_auth:templates'
         config = Configurator(settings=settings)
-        includeme(config)
-        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
-        request.registry = config.registry
-        view = CookieView(None, request)
         try:
-            view.login()
+            includeme(config)
             assert(False)
         except Exception, e:
             self.assertEqual(
                 str(e),
                 'authentication.cookie.validate_function is not defined.')
 
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = BaseLoginView(None, request)
+        try:
+            view.login()
+            assert(False)
+        except KeyError, e:
+            self.assertEqual(
+                str(e),
+                "'authentication.validate_function'")
+
         settings['authentication.cookie.validate_function'] = 'tests.test_auth.validate_func'
         config = Configurator(settings=settings)
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = CookieView(None, request)
+        view = BaseLoginView(None, request)
         res = view.login()
         self.assertTrue(res)
 
@@ -380,7 +385,7 @@ class TestAuthLdapFunction(unittest.TestCase):
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = LdapView(None, request)
+        view = BaseLoginView(None, request)
         func = view.get_validate_func()
         self.assertEqual(func, validate_ldap)
 
@@ -390,7 +395,7 @@ class TestAuthLdapFunction(unittest.TestCase):
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = LdapView(None, request)
+        view = BaseLoginView(None, request)
         self.assertEqual(func, validate_ldap)
         self.assertTrue(func, validate_func)
 
@@ -599,13 +604,3 @@ class TestAuthLdapCallback(unittest.TestCase):
                                    headers=self.__remember('Bob'),
                                    status=200)
             self.assertTrue("the user is ldap" in res)
-
-
-class TestBaseLoginView(unittest.TestCase):
-
-    def test_get_validate_func(self):
-        try:
-            BaseLoginView(None, None).get_validate_func()
-            assert(False)
-        except NotImplementedError:
-            pass

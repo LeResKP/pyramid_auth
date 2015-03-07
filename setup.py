@@ -33,6 +33,7 @@ setup(name='pyramid_auth',
       zip_safe=False,
       install_requires=[
           'pyramid_mako',
+          'pyramid_ldap',
           'pyramid',
           'tw2.core',
           'tw2.forms',

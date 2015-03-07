@@ -2,7 +2,7 @@ from pyramid.authentication import RemoteUserAuthenticationPolicy
 from paste.util.import_string import eval_import
 
 from .utils import str_to_bool, parse_settings
-from.views import base_includeme
+from .views import base_includeme
 
 
 SETTINGS = {

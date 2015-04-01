@@ -24,6 +24,22 @@ class TestUserExists(unittest.TestCase):
             'pwd': 'secret',
         }
         v._validate_python(dic, None)
+        self.assertFalse('user' in dic)
+
+    def test__validate_python_obj(self):
+        validate_func = lambda request, login, pwd: 'Hello world'
+        v = forms.UserExists(
+            login='login',
+            password='pwd',
+            validate_func=validate_func,
+            request=None
+        )
+        dic = {
+            'login': 'Bob',
+            'pwd': 'secret',
+        }
+        v._validate_python(dic, None)
+        self.assertEqual(dic['user'], 'Hello world')
 
     def test__validate_python_invalid(self):
         validate_func = lambda request, login, pwd: pwd == 'secret'

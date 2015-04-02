@@ -1,10 +1,9 @@
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from paste.util.import_string import eval_import
 from pyramid_ldap import get_ldap_connector
-import ldap
 
 from .utils import str_to_bool, parse_settings
-from .views import BaseLoginView, login_includeme
+from .views import login_includeme
 
 
 def validate_ldap(request, login, password):
@@ -26,16 +25,6 @@ def validate_ldap(request, login, password):
     if not data:
         return False
     return True
-
-
-class LdapView(BaseLoginView):
-
-    def get_validate_func(self):
-        settings = self.request.registry.settings
-        func_str = settings.get('authentication.ldap.validate_function')
-        if func_str:
-            return eval_import(func_str)
-        return validate_ldap
 
 
 def get_ldap_groups(dn, request):
@@ -61,9 +50,9 @@ def get_groups(dn, request):
     you want to add new logic.
     """
     lis = []
-    if request.registry.settings.get('authentication.ldap.groups.filter_tmpl'):
+    if request.registry.settings.get('pyramid_auth.ldap.groups.filter_tmpl'):
         lis += get_ldap_groups(dn, request)
-    callback = request.registry.settings.get('authentication.ldap.callback')
+    callback = request.registry.settings.get('pyramid_auth.ldap.callback')
     if callback:
         func = eval_import(callback)
         lis += func(dn, request)
@@ -124,12 +113,20 @@ SETTINGS = {
 
 def includeme(config):
     settings = config.registry.settings
-    prefix = 'authentication.ldap'
+    prefix = 'pyramid_auth.ldap'
     config.set_authentication_policy(
         AuthTktAuthenticationPolicy(
             **parse_settings(settings, SETTINGS, 'cookie', prefix)
         )
     )
+
+    validate_function = validate_ldap
+    func_str = config.registry.settings.get(
+        'pyramid_auth.ldap.validate_function')
+    if func_str:
+        validate_function = eval_import(func_str)
+    config.registry.settings[
+        'pyramid_auth.validate_function'] = validate_function
 
     config.ldap_setup(**parse_settings(settings,
                                        SETTINGS,
@@ -144,4 +141,4 @@ def includeme(config):
                                                   'groups',
                                                   prefix))
 
-    login_includeme(LdapView, config)
+    login_includeme(config)

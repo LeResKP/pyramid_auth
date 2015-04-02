@@ -4,9 +4,7 @@ from webtest import TestApp
 from pyramid import testing
 from pyramid.config import Configurator
 from pyramid_auth import *
-from pyramid_auth.cookie_auth import CookieView
 from pyramid_auth.views import BaseLoginView
-from pyramid_auth.ldap_auth import LdapView
 from pyramid_auth.ldap_auth import validate_ldap
 from pyramid.security import Authenticated, Allow, remember
 from pyramid.view import view_config
@@ -84,7 +82,7 @@ def main(global_config, **settings):
 
 class TestAuthRemoteUser(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'remote_user'
+        'pyramid_auth.policy': 'remote_user'
     }
 
     def setUp(self):
@@ -110,8 +108,8 @@ class TestAuthRemoteUser(unittest.TestCase):
 
 class TestAuthRemoteUserCustomKey(unittest.TestCase):
     SETTINGS = {
-        'authentication.remote_user.environ_key': 'HTTP_REMOTE_USER',
-        'authentication.policy': 'remote_user'
+        'pyramid_auth.remote_user.environ_key': 'HTTP_REMOTE_USER',
+        'pyramid_auth.policy': 'remote_user'
     }
 
     def setUp(self):
@@ -138,8 +136,8 @@ class TestAuthRemoteUserCustomKey(unittest.TestCase):
 
 class TestAuthRemoteUserCallback(unittest.TestCase):
     SETTINGS = {
-        'authentication.remote_user.callback': 'tests.test_auth.callback',
-        'authentication.policy': 'remote_user'
+        'pyramid_auth.remote_user.callback': 'tests.test_auth.callback',
+        'pyramid_auth.policy': 'remote_user'
     }
 
     def setUp(self):
@@ -170,48 +168,55 @@ class TestAuthCookieFunction(unittest.TestCase):
 
     def test_cookie_auth(self):
         settings = {}
-        settings['authentication.policy'] = 'cookie'
+        settings['pyramid_auth.policy'] = 'cookie'
         config = Configurator(settings=settings)
         try:
             includeme(config)
             assert(False)
         except Exception, e:
             self.assertEqual(str(e),
-                             'authentication.cookie.secret not defined')
+                             'pyramid_auth.cookie.secret not defined')
 
     def test_get_validate_func(self):
         settings = {}
-        settings['authentication.policy'] = 'cookie'
-        settings['authentication.cookie.secret'] = 'secret'
+        settings['pyramid_auth.policy'] = 'cookie'
+        settings['pyramid_auth.cookie.secret'] = 'secret'
         settings['mako.directories'] = 'pyramid_auth:templates'
         config = Configurator(settings=settings)
-        includeme(config)
-        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
-        request.registry = config.registry
-        view = CookieView(None, request)
         try:
-            view.login()
+            includeme(config)
             assert(False)
         except Exception, e:
             self.assertEqual(
                 str(e),
-                'authentication.cookie.validate_function is not defined.')
+                'pyramid_auth.cookie.validate_function is not defined.')
 
-        settings['authentication.cookie.validate_function'] = 'tests.test_auth.validate_func'
+        request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
+        request.registry = config.registry
+        view = BaseLoginView(None, request)
+        try:
+            view.login()
+            assert(False)
+        except KeyError, e:
+            self.assertEqual(
+                str(e),
+                "'pyramid_auth.validate_function'")
+
+        settings['pyramid_auth.cookie.validate_function'] = 'tests.test_auth.validate_func'
         config = Configurator(settings=settings)
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = CookieView(None, request)
+        view = BaseLoginView(None, request)
         res = view.login()
         self.assertTrue(res)
 
 
 class TestAuthCookieLogin(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'cookie',
-        'authentication.cookie.secret': 'secret',
-        'authentication.cookie.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.policy': 'cookie',
+        'pyramid_auth.cookie.secret': 'secret',
+        'pyramid_auth.cookie.validate_function': 'tests.test_auth.validate_func',
     }
 
     def setUp(self):
@@ -261,9 +266,9 @@ class TestAuthCookieLogin(unittest.TestCase):
 
 class TestAuthCookie(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'cookie',
-        'authentication.cookie.secret': 'secret',
-        'authentication.cookie.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.policy': 'cookie',
+        'pyramid_auth.cookie.secret': 'secret',
+        'pyramid_auth.cookie.validate_function': 'tests.test_auth.validate_func',
     }
 
     def setUp(self):
@@ -306,10 +311,10 @@ class TestAuthCookie(unittest.TestCase):
 
 class TestAuthCookieCallback(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'cookie',
-        'authentication.cookie.secret': 'secret',
-        'authentication.cookie.validate_function': 'tests.test_auth.validate_func',
-        'authentication.cookie.callback': 'tests.test_auth.callback',
+        'pyramid_auth.policy': 'cookie',
+        'pyramid_auth.cookie.secret': 'secret',
+        'pyramid_auth.cookie.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.cookie.callback': 'tests.test_auth.callback',
     }
 
     def setUp(self):
@@ -362,17 +367,17 @@ class TestAuthLdapFunction(unittest.TestCase):
 
     def test_get_validate_func(self):
         settings = {}
-        settings['authentication.policy'] = 'ldap'
-        settings['authentication.ldap.cookie.secret'] = 'secret'
+        settings['pyramid_auth.policy'] = 'ldap'
+        settings['pyramid_auth.ldap.cookie.secret'] = 'secret'
         settings.update({
-            'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
-            'authentication.ldap.setup.base_dn': 'base_dn',
+            'pyramid_auth.ldap.setup.uri': 'http://ldap.lereskp.fr',
+            'pyramid_auth.ldap.setup.base_dn': 'base_dn',
 
-            'authentication.ldap.login.base_dn': 'base_dn',
-            'authentication.ldap.login.filter_tmpl': 'filter',
+            'pyramid_auth.ldap.login.base_dn': 'base_dn',
+            'pyramid_auth.ldap.login.filter_tmpl': 'filter',
 
-            'authentication.ldap.groups.base_dn': 'base_dn',
-            'authentication.ldap.groups.filter_tmpl': 'filter',
+            'pyramid_auth.ldap.groups.base_dn': 'base_dn',
+            'pyramid_auth.ldap.groups.filter_tmpl': 'filter',
         })
         settings['mako.directories'] = 'pyramid_auth:templates'
         config = Configurator(settings=settings)
@@ -380,33 +385,33 @@ class TestAuthLdapFunction(unittest.TestCase):
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = LdapView(None, request)
+        view = BaseLoginView(None, request)
         func = view.get_validate_func()
         self.assertEqual(func, validate_ldap)
 
-        settings['authentication.ldap.validate_function'] = 'tests.test_auth.validate_func'
+        settings['pyramid_auth.ldap.validate_function'] = 'tests.test_auth.validate_func'
         config = Configurator(settings=settings)
         config.include('pyramid_ldap')
         includeme(config)
         request = testing.DummyRequest(environ={'SERVER_NAME': 'servername'})
         request.registry = config.registry
-        view = LdapView(None, request)
+        view = BaseLoginView(None, request)
         self.assertEqual(func, validate_ldap)
         self.assertTrue(func, validate_func)
 
 
 class TestAuthLdapLogin(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'ldap',
-        'authentication.ldap.cookie.secret': 'secret',
-        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+        'pyramid_auth.policy': 'ldap',
+        'pyramid_auth.ldap.cookie.secret': 'secret',
+        'pyramid_auth.ldap.setup.uri': 'http://ldap.lereskp.fr',
 
-        'authentication.ldap.login.base_dn': 'base_dn',
-        'authentication.ldap.login.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.login.base_dn': 'base_dn',
+        'pyramid_auth.ldap.login.filter_tmpl': 'filter',
 
-        'authentication.ldap.groups.base_dn': 'base_dn',
-        'authentication.ldap.groups.filter_tmpl': 'filter',
-        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.ldap.groups.base_dn': 'base_dn',
+        'pyramid_auth.ldap.groups.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.validate_function': 'tests.test_auth.validate_func',
     }
 
     def setUp(self):
@@ -456,16 +461,16 @@ class TestAuthLdapLogin(unittest.TestCase):
 
 class TestAuthLdap(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'ldap',
-        'authentication.ldap.cookie.secret': 'secret',
-        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+        'pyramid_auth.policy': 'ldap',
+        'pyramid_auth.ldap.cookie.secret': 'secret',
+        'pyramid_auth.ldap.setup.uri': 'http://ldap.lereskp.fr',
 
-        'authentication.ldap.login.base_dn': 'base_dn',
-        'authentication.ldap.login.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.login.base_dn': 'base_dn',
+        'pyramid_auth.ldap.login.filter_tmpl': 'filter',
 
-        'authentication.ldap.groups.base_dn': 'base_dn',
-        'authentication.ldap.groups.filter_tmpl': 'filter',
-        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.ldap.groups.base_dn': 'base_dn',
+        'pyramid_auth.ldap.groups.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.validate_function': 'tests.test_auth.validate_func',
     }
 
     def setUp(self):
@@ -522,17 +527,17 @@ class TestAuthLdap(unittest.TestCase):
 
 class TestAuthLdapCallback(unittest.TestCase):
     SETTINGS = {
-        'authentication.policy': 'ldap',
-        'authentication.ldap.cookie.secret': 'secret',
-        'authentication.ldap.setup.uri': 'http://ldap.lereskp.fr',
+        'pyramid_auth.policy': 'ldap',
+        'pyramid_auth.ldap.cookie.secret': 'secret',
+        'pyramid_auth.ldap.setup.uri': 'http://ldap.lereskp.fr',
 
-        'authentication.ldap.login.base_dn': 'base_dn',
-        'authentication.ldap.login.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.login.base_dn': 'base_dn',
+        'pyramid_auth.ldap.login.filter_tmpl': 'filter',
 
-        'authentication.ldap.groups.base_dn': 'base_dn',
-        'authentication.ldap.groups.filter_tmpl': 'filter',
-        'authentication.ldap.validate_function': 'tests.test_auth.validate_func',
-        'authentication.ldap.callback': 'tests.test_auth.callback',
+        'pyramid_auth.ldap.groups.base_dn': 'base_dn',
+        'pyramid_auth.ldap.groups.filter_tmpl': 'filter',
+        'pyramid_auth.ldap.validate_function': 'tests.test_auth.validate_func',
+        'pyramid_auth.ldap.callback': 'tests.test_auth.callback',
     }
 
     def setUp(self):
@@ -599,13 +604,3 @@ class TestAuthLdapCallback(unittest.TestCase):
                                    headers=self.__remember('Bob'),
                                    status=200)
             self.assertTrue("the user is ldap" in res)
-
-
-class TestBaseLoginView(unittest.TestCase):
-
-    def test_get_validate_func(self):
-        try:
-            BaseLoginView(None, None).get_validate_func()
-            assert(False)
-        except NotImplementedError:
-            pass

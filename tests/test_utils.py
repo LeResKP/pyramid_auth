@@ -115,10 +115,10 @@ class TestUtils(unittest.TestCase):
             'value': '10',
         }
         try:
-            res = utils.parse_settings(settings, mapping, 'authentication')
+            res = utils.parse_settings(settings, mapping, 'pyramid_auth')
             assert(False)
         except Exception, e:
-            self.assertEqual(str(e), 'No settings defined for authentication')
+            self.assertEqual(str(e), 'No settings defined for pyramid_auth')
 
     def test_parse_settings_key(self):
         mapping = {
@@ -148,13 +148,13 @@ class TestUtils(unittest.TestCase):
             ]
         }
         settings = {
-            'authentication.setup.key': 'my key',
-            'authentication.setup.value': '10',
+            'pyramid_auth.setup.key': 'my key',
+            'pyramid_auth.setup.value': '10',
         }
         expected = {
             'key': 'my key',
             'value': 10,
         }
         res = utils.parse_settings(settings, mapping, 'setup',
-                                 prefix='authentication')
+                                 prefix='pyramid_auth')
         self.assertEqual(res, expected)

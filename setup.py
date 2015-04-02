@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass
 
-version = '0.3'
+version = '0.4'
 
 setup(name='pyramid_auth',
       version=version,
@@ -33,6 +33,7 @@ setup(name='pyramid_auth',
       zip_safe=False,
       install_requires=[
           'pyramid_mako',
+          'pyramid_ldap',
           'pyramid',
           'tw2.core',
           'tw2.forms',

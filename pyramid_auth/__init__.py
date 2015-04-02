@@ -1,17 +1,15 @@
 from pyramid.authorization import ACLAuthorizationPolicy
-from paste.util.import_string import eval_import
 
 
 def includeme(config):
     settings = config.registry.settings
-    policy = settings.get('authentication.policy') or 'cookie'
+    policy = settings.get('pyramid_auth.policy') or 'cookie'
 
     if policy not in ['cookie', 'remote_user', 'ldap']:
         raise Exception('Policy not supported: %s' % policy)
 
-    mod = eval_import('pyramid_auth.%s_auth' % policy)
     config.set_authorization_policy(ACLAuthorizationPolicy())
-    mod.includeme(config)
+    config.include('pyramid_auth.%s_auth' % policy)
 
     sqladmin_dir = 'pyramid_auth:templates'
 

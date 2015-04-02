@@ -25,8 +25,11 @@ class UserExists(twc.Validator):
             except TypeError:
                 pass
 
-        if not self.validate_func(self.request, login, password):
+        res = self.validate_func(self.request, login, password)
+        if not res:
             raise twc.ValidationError('mismatch', self)
+        if res is not True:
+            value['user'] = res
 
 
 def create_login_form(request, validate_func):

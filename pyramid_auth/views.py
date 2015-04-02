@@ -27,7 +27,8 @@ class BaseView(object):
 class BaseLoginView(BaseView):
 
     def get_validate_func(self):
-        raise NotImplementedError
+        return self.request.registry.settings[
+            'pyramid_auth.validate_function']
 
     def _get_next_location(self):
         login_url = self.request.route_url('login')
@@ -66,6 +67,8 @@ class BaseLoginView(BaseView):
 
 
 def base_includeme(config):
+    if config.registry.settings.get('pyramid_auth.no_routes'):
+        return
     config.add_view(
         BaseView,
         attr='forbidden',
@@ -73,7 +76,10 @@ def base_includeme(config):
         renderer='auth/forbidden.mak')
 
 
-def login_includeme(ViewClass, config):
+def login_includeme(config):
+    if config.registry.settings.get('pyramid_auth.no_routes'):
+        return
+    ViewClass = BaseLoginView
     config.add_view(
         ViewClass,
         attr='forbidden_redirect',

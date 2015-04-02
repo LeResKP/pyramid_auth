@@ -13,10 +13,18 @@ Introduction
 This is a plugin for pyramid which provides a simple authentication system. The idea was to use exising authentication's policies to provide multiple support. Currently this plugin support cookie, remote_user and ldap policies.
 
 
-For the cookie and ldap policies it generates the form and the urls automatically:
+By default the cookie and ldap policies generate the form and the urls automatically:
     * /login: display the login form
     * /logout: logout the user
     * /forbidden: the user is redirected to this page when he is logged but doesn't have the right permission to see a page.
+
+If you want to generate your own urls you can set the following parameter
+
+``pyramid_auth.no_routes``
+
+    If set in your config, no routes will be added automatically. It's usefull
+    when you use an API for authentication.
+
 
 .. note::
 
@@ -52,16 +60,16 @@ Configuration
 
 You need to set some options in your .ini file. See this example for the required ones::
 
-    authentication.policy = cookie
-    authentication.cookie.secret = mysecret
-    authentication.cookie.validate_function = validate_function
+    pyramid_auth.policy = cookie
+    pyramid_auth.cookie.secret = mysecret
+    pyramid_auth.cookie.validate_function = validate_function
 
 
 
 Options
 -------
 
-``authentication.cookie.validate_function``
+``pyramid_auth.cookie.validate_function``
 
     Function to validate the credential. It can make some call in your DB or make some static verification. Here is a small example::
 
@@ -72,12 +80,12 @@ Options
 
     Required.
 
-``authentication.cookie.secret``
+``pyramid_auth.cookie.secret``
 
     The secret (a string) used for auth_tkt cookie signing.
     Required.
 
-``authentication.cookie.callback``
+``pyramid_auth.cookie.callback``
 
     Default: ``None``.  A callback passed the userid and the
     request, expected to return ``None`` if the userid doesn't
@@ -85,17 +93,17 @@ Options
     the user does exist.  If ``callback`` is ``None``, the userid
     will be assumed to exist with no principals.  Optional.
 
-``authentication.cookie.cookie_name``
+``pyramid_auth.cookie.cookie_name``
 
     Default: ``auth_tkt``.  The cookie name used
     (string).  Optional.
 
-``authentication.cookie.secure``
+``pyramid_auth.cookie.secure``
 
     Default: ``False``.  Only send the cookie back over a secure
     conn.  Optional.
 
-``authentication.cookie.include_ip``
+``pyramid_auth.cookie.include_ip``
 
     Default: ``False``.  Make the requesting IP address part of
     the authentication data in the cookie.  Optional.
@@ -106,7 +114,7 @@ Options
     incompatible cookie. It ties the authentication ticket to that
     individual's IPv6 address.
 
-``authentication.cookie.timeout``
+``pyramid_auth.cookie.timeout``
 
     Default: ``None``.  Maximum number of seconds which a newly
     issued ticket will be considered valid.  After this amount of
@@ -114,12 +122,12 @@ Options
     out).  If this value is ``None``, the ticket never expires.
     Optional.
 
-``authentication.cookie.reissue_time``
+``pyramid_auth.cookie.reissue_time``
 
     Default: ``None``.  If this parameter is set, it represents the number
     of seconds that must pass before an authentication token cookie is
     automatically reissued as the result of a request which requires
-    authentication.  The duration is measured as the number of seconds
+    pyramid_auth.  The duration is measured as the number of seconds
     since the last auth_tkt cookie was issued and 'now'.  If this value is
     ``0``, a new ticket cookie will be reissued on every request which
     requires authentication.
@@ -133,7 +141,7 @@ Options
 
     Optional.
 
-``authentication.cookie.max_age``
+``pyramid_auth.cookie.max_age``
 
     Default: ``None``.  The max age of the auth_tkt cookie, in
     seconds.  This differs from ``timeout`` inasmuch as ``timeout``
@@ -146,19 +154,19 @@ Options
     ``reissue_time``, although it is not explicitly prevented.
     Optional.
 
-``authentication.cookie.path``
+``pyramid_auth.cookie.path``
 
     Default: ``/``. The path for which the auth_tkt cookie is valid.
     May be desirable if the application only serves part of a domain.
     Optional.
 
-``authentication.cookie.http_only``
+``pyramid_auth.cookie.http_only``
 
     Default: ``False``. Hide cookie from JavaScript by setting the
     HttpOnly flag. Not honored by all browsers.
     Optional.
 
-``authentication.cookie.wild_domain``
+``pyramid_auth.cookie.wild_domain``
 
     Default: ``True``. An auth_tkt cookie will be generated for the
     wildcard domain. If your site is hosted as ``example.com`` this
@@ -166,7 +174,7 @@ Options
     such as ``www.example.com``.
     Optional.
 
-``authentication.cookie.parent_domain``
+``pyramid_auth.cookie.parent_domain``
 
     Default: ``False``. An auth_tkt cookie will be generated for the
     parent domain of the current site. For example if your site is
@@ -176,14 +184,14 @@ Options
     option.
     Optional.
 
-``authentication.cookie.domain``
+``pyramid_auth.cookie.domain``
 
     Default: ``None``. If provided the auth_tkt cookie will only be
     set for this domain. This option is not compatible with ``wild_domain``
     and ``parent_domain``.
     Optional.
 
-``authentication.cookie.hashalg``
+``pyramid_auth.cookie.hashalg``
 
     Default: ``sha512`` (the literal string).
 
@@ -197,7 +205,7 @@ Options
 
     Optional.
 
-``authentication.cookie.debug``
+``pyramid_auth.cookie.debug``
 
     Default: ``False``.  If ``debug`` is ``True``, log messages to the
     Pyramid debug logger about the results of various authentication
@@ -233,7 +241,7 @@ Configuration
 
 You need to set some options in your .ini file. See this example for the required ones::
 
-    authentication.policy = remote_user
+    pyramid_auth.policy = remote_user
 
 
 Options
@@ -303,26 +311,26 @@ Configuration
 
 You need to set some options in your .ini file. See this example for the required ones::
 
-    authentication.policy = ldap
-    authentication.ldap.cookie.secret = mysecret
-    authentication.ldap.setup.uri = http://ldap.lereskp.fr
-    authentication.ldap.setup.passwd = myldappasswd
+    pyramid_auth.policy = ldap
+    pyramid_auth.ldap.cookie.secret = mysecret
+    pyramid_auth.ldap.setup.uri = http://ldap.lereskp.fr
+    pyramid_auth.ldap.setup.passwd = myldappasswd
 
-    authentication.ldap.login.base_dn = CN=Users,DC=lereskp,DC=fr
-    authentication.ldap.login.filter_tmpl = (sAMAccountName=$login)
+    pyramid_auth.ldap.login.base_dn = CN=Users,DC=lereskp,DC=fr
+    pyramid_auth.ldap.login.filter_tmpl = (sAMAccountName=$login)
 
 If you want to put some permissions according to the ldap groups, you have to give the parameters to be able to query the ldap::
 
-    authentication.policy = ldap
-    authentication.ldap.cookie.secret = mysecret
-    authentication.ldap.setup.uri = http://ldap.lereskp.fr
-    authentication.ldap.setup.passwd = myldappasswd
+    pyramid_auth.policy = ldap
+    pyramid_auth.ldap.cookie.secret = mysecret
+    pyramid_auth.ldap.setup.uri = http://ldap.lereskp.fr
+    pyramid_auth.ldap.setup.passwd = myldappasswd
 
-    authentication.ldap.login.base_dn = CN=Users,DC=lereskp,DC=fr
-    authentication.ldap.login.filter_tmpl = (sAMAccountName=$login)
+    pyramid_auth.ldap.login.base_dn = CN=Users,DC=lereskp,DC=fr
+    pyramid_auth.ldap.login.filter_tmpl = (sAMAccountName=$login)
 
-    authentication.ldap.groups.base_dn = CN=Users,DC=lereskp,DC=fr
-    authentication.ldap.groups.filter_tmpl = (&(objectCategory=group)(member=$userdn))
+    pyramid_auth.ldap.groups.base_dn = CN=Users,DC=lereskp,DC=fr
+    pyramid_auth.ldap.groups.filter_tmpl = (&(objectCategory=group)(member=$userdn))
 
 
 Options
@@ -331,12 +339,12 @@ Options
 Cookie
 ^^^^^^
 
-``authentication.ldap.cookie.secret``
+``pyramid_auth.ldap.cookie.secret``
 
     The secret (a string) used for auth_tkt cookie signing.
     Required.
 
-``authentication.ldap.cookie.callback``
+``pyramid_auth.ldap.cookie.callback``
 
     Default: ``None``.  A callback passed the userid and the
     request, expected to return ``None`` if the userid doesn't
@@ -344,17 +352,17 @@ Cookie
     the user does exist.  If ``callback`` is ``None``, the userid
     will be assumed to exist with no principals.  Optional.
 
-``authentication.ldap.cookie.cookie_name``
+``pyramid_auth.ldap.cookie.cookie_name``
 
     Default: ``auth_tkt``.  The cookie name used
     (string).  Optional.
 
-``authentication.ldap.cookie.secure``
+``pyramid_auth.ldap.cookie.secure``
 
     Default: ``False``.  Only send the cookie back over a secure
     conn.  Optional.
 
-``authentication.ldap.cookie.include_ip``
+``pyramid_auth.ldap.cookie.include_ip``
 
     Default: ``False``.  Make the requesting IP address part of
     the authentication data in the cookie.  Optional.
@@ -365,7 +373,7 @@ Cookie
     incompatible cookie. It ties the authentication ticket to that
     individual's IPv6 address.
 
-``authentication.ldap.cookie.timeout``
+``pyramid_auth.ldap.cookie.timeout``
 
     Default: ``None``.  Maximum number of seconds which a newly
     issued ticket will be considered valid.  After this amount of
@@ -373,7 +381,7 @@ Cookie
     out).  If this value is ``None``, the ticket never expires.
     Optional.
 
-``authentication.ldap.cookie.reissue_time``
+``pyramid_auth.ldap.cookie.reissue_time``
 
     Default: ``None``.  If this parameter is set, it represents the number
     of seconds that must pass before an authentication token cookie is
@@ -392,7 +400,7 @@ Cookie
 
     Optional.
 
-``authentication.ldap.cookie.max_age``
+``pyramid_auth.ldap.cookie.max_age``
 
     Default: ``None``.  The max age of the auth_tkt cookie, in
     seconds.  This differs from ``timeout`` inasmuch as ``timeout``
@@ -405,19 +413,19 @@ Cookie
     ``reissue_time``, although it is not explicitly prevented.
     Optional.
 
-``authentication.ldap.cookie.path``
+``pyramid_auth.ldap.cookie.path``
 
     Default: ``/``. The path for which the auth_tkt cookie is valid.
     May be desirable if the application only serves part of a domain.
     Optional.
 
-``authentication.ldap.cookie.http_only``
+``pyramid_auth.ldap.cookie.http_only``
 
     Default: ``False``. Hide cookie from JavaScript by setting the
     HttpOnly flag. Not honored by all browsers.
     Optional.
 
-``authentication.ldap.cookie.wild_domain``
+``pyramid_auth.ldap.cookie.wild_domain``
 
     Default: ``True``. An auth_tkt cookie will be generated for the
     wildcard domain. If your site is hosted as ``example.com`` this
@@ -425,7 +433,7 @@ Cookie
     such as ``www.example.com``.
     Optional.
 
-``authentication.ldap.cookie.parent_domain``
+``pyramid_auth.ldap.cookie.parent_domain``
 
     Default: ``False``. An auth_tkt cookie will be generated for the
     parent domain of the current site. For example if your site is
@@ -435,14 +443,14 @@ Cookie
     option.
     Optional.
 
-``authentication.ldap.cookie.domain``
+``pyramid_auth.ldap.cookie.domain``
 
     Default: ``None``. If provided the auth_tkt cookie will only be
     set for this domain. This option is not compatible with ``wild_domain``
     and ``parent_domain``.
     Optional.
 
-``authentication.ldap.cookie.hashalg``
+``pyramid_auth.ldap.cookie.hashalg``
 
     Default: ``sha512`` (the literal string).
 
@@ -456,7 +464,7 @@ Cookie
 
     Optional.
 
-``authentication.ldap.cookie.debug``
+``pyramid_auth.ldap.cookie.debug``
 
     Default: ``False``.  If ``debug`` is ``True``, log messages to the
     Pyramid debug logger about the results of various authentication
@@ -467,39 +475,39 @@ Cookie
 Setup
 ^^^^^
 
-``authentication.ldap.setup.uri``
+``pyramid_auth.ldap.setup.uri``
 
     ldap server uri. Required.
 
-``authentication.ldap.setup.bind``
+``pyramid_auth.ldap.setup.bind``
 
     Default ``None``. Bind that will be used to bind a connector. Optional.
 
-``authentication.ldap.setup.passwd``
+``pyramid_auth.ldap.setup.passwd``
 
     Default ``None``. Password that will be used to bind a connector. Optional.
 
-``authentication.ldap.setup.size``
+``pyramid_auth.ldap.setup.size``
 
     Default ``10``. pool size. Optional.
 
-``authentication.ldap.setup.retry_max``
+``pyramid_auth.ldap.setup.retry_max``
 
     Default ``3``. Number of attempts when a server is down. Optional.
 
-``authentication.ldap.setup.retry_delay``
+``pyramid_auth.ldap.setup.retry_delay``
 
     Default: ``.1``. Delay in seconds before a retry. Optional.
 
-``authentication.ldap.setup.use_tls``
+``pyramid_auth.ldap.setup.use_tls``
 
     Default ``False``. Activate TLS when connecting. Optional.
 
-``authentication.ldap.setup.timeout``
+``pyramid_auth.ldap.setup.timeout``
 
     Default ``-1``. Connector timeout. Optional.
 
-``authentication.ldap.setup.use_pool``
+``pyramid_auth.ldap.setup.use_pool``
 
     Default ``True``. Activates the pool. If False, will recreate a connector each time. Optional.
 
@@ -507,19 +515,19 @@ Setup
 Login
 ^^^^^
 
-``authentication.ldap.login.base_dn``
+``pyramid_auth.ldap.login.base_dn``
 
     is the DN at which to begin the search.
 
-``authentication.ldap.login.filter_tmpl``
+``pyramid_auth.ldap.login.filter_tmpl``
 
     is a string which can be used as an LDAP filter: it should contain the replacement value %(login)s.
 
-``authentication.ldap.login.scope``
+``pyramid_auth.ldap.login.scope``
 
     is any valid LDAP scope value (e.g. ldap.SCOPE_ONELEVEL).
 
-``authentication.ldap.login.cache_period``
+``pyramid_auth.ldap.login.cache_period``
 
     is the number of seconds to cache login search results; if it is 0, login search results will not be cached.
 
@@ -527,17 +535,17 @@ Login
 Groups
 ^^^^^^
 
-``authentication.ldap.groups.base_dn``
+``pyramid_auth.ldap.groups.base_dn``
 
     is the DN at which to begin the search.
 
-``authentication.ldap.groups.filter_tmpl``
+``pyramid_auth.ldap.groups.filter_tmpl``
 
     is a string which can be used as an LDAP filter: it should contain the replacement value %(userdn)s.
 
 .. important:: In pyramid_ldap userdn represent the user distinguished name. In pyramid_auth it represents the user uid. So you should make your filter_tmpl according to the user uid.
 
-``authentication.ldap.groups.scope``
+``pyramid_auth.ldap.groups.scope``
 
     is any valid LDAP scope value (e.g. ldap.SCOPE_SUBTREE). cache_period is the number of seconds to cache groups search results; if it is 0, groups search results will not be cached.
 
@@ -545,11 +553,11 @@ Groups
 Extra
 ^^^^^
 
-``authentication.ldap.validate_function``
+``pyramid_auth.ldap.validate_function``
 
     Default: ``None``. You can set a function to validate the ldap login/password it you want to be more specific. Optional.
 
-``authentication.ldap.callback``
+``pyramid_auth.ldap.callback``
 
     Default: ``None``.  A callback passed the userid and the
     request to extend the groups found by the ldap groups query.

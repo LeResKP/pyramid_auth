@@ -67,6 +67,8 @@ class BaseLoginView(BaseView):
 
 
 def base_includeme(config):
+    if config.registry.settings.get('authentication.no_routes'):
+        return
     config.add_view(
         BaseView,
         attr='forbidden',
@@ -75,6 +77,8 @@ def base_includeme(config):
 
 
 def login_includeme(config):
+    if config.registry.settings.get('authentication.no_routes'):
+        return
     ViewClass = BaseLoginView
     config.add_view(
         ViewClass,

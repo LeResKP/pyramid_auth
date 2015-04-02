@@ -26,16 +26,16 @@ SETTINGS = {
 
 def includeme(config):
     settings = parse_settings(config.registry.settings, SETTINGS, 'cookie',
-                              'authentication')
+                              'pyramid_auth')
     config.set_authentication_policy(
         AuthTktAuthenticationPolicy(
             **settings
         )
     )
-    key = 'authentication.cookie.validate_function'
+    key = 'pyramid_auth.cookie.validate_function'
     func_str = config.registry.settings.get(key)
     if not func_str:
         raise AttributeError('%s is not defined.' % key)
     config.registry.settings[
-        'authentication.validate_function'] = eval_import(func_str)
+        'pyramid_auth.validate_function'] = eval_import(func_str)
     login_includeme(config)

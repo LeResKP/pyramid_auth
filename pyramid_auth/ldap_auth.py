@@ -50,9 +50,9 @@ def get_groups(dn, request):
     you want to add new logic.
     """
     lis = []
-    if request.registry.settings.get('authentication.ldap.groups.filter_tmpl'):
+    if request.registry.settings.get('pyramid_auth.ldap.groups.filter_tmpl'):
         lis += get_ldap_groups(dn, request)
-    callback = request.registry.settings.get('authentication.ldap.callback')
+    callback = request.registry.settings.get('pyramid_auth.ldap.callback')
     if callback:
         func = eval_import(callback)
         lis += func(dn, request)
@@ -113,7 +113,7 @@ SETTINGS = {
 
 def includeme(config):
     settings = config.registry.settings
-    prefix = 'authentication.ldap'
+    prefix = 'pyramid_auth.ldap'
     config.set_authentication_policy(
         AuthTktAuthenticationPolicy(
             **parse_settings(settings, SETTINGS, 'cookie', prefix)
@@ -122,11 +122,11 @@ def includeme(config):
 
     validate_function = validate_ldap
     func_str = config.registry.settings.get(
-        'authentication.ldap.validate_function')
+        'pyramid_auth.ldap.validate_function')
     if func_str:
         validate_function = eval_import(func_str)
     config.registry.settings[
-        'authentication.validate_function'] = validate_function
+        'pyramid_auth.validate_function'] = validate_function
 
     config.ldap_setup(**parse_settings(settings,
                                        SETTINGS,

@@ -7,7 +7,7 @@ class TestIncludeme(unittest.TestCase):
 
     def test_unsupported_policy(self):
         settings = {}
-        settings['authentication.policy'] = 'unexisting'
+        settings['pyramid_auth.policy'] = 'unexisting'
         config = Configurator(settings=settings)
         try:
             includeme(config)
@@ -17,9 +17,9 @@ class TestIncludeme(unittest.TestCase):
 
     def test_mako_directories(self):
         settings = {}
-        settings['authentication.policy'] = 'cookie'
-        settings['authentication.cookie.secret'] = 'secret'
-        settings['authentication.cookie.validate_function'] = 'tests.test_auth.validate_func'
+        settings['pyramid_auth.policy'] = 'cookie'
+        settings['pyramid_auth.cookie.secret'] = 'secret'
+        settings['pyramid_auth.cookie.validate_function'] = 'tests.test_auth.validate_func'
         settings['mako.directories'] = 'pkg:templates'
         config = Configurator(settings=settings)
         includeme(config)

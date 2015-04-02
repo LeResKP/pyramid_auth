@@ -16,7 +16,7 @@ SETTINGS = {
 
 def includeme(config):
     settings = parse_settings(config.registry.settings, SETTINGS,
-                              'remote_user', 'authentication')
+                              'remote_user', 'pyramid_auth')
     config.set_authentication_policy(
         RemoteUserAuthenticationPolicy(
             **settings

@@ -28,7 +28,7 @@ class BaseLoginView(BaseView):
 
     def get_validate_func(self):
         return self.request.registry.settings[
-            'authentication.validate_function']
+            'pyramid_auth.validate_function']
 
     def _get_next_location(self):
         login_url = self.request.route_url('login')
@@ -67,7 +67,7 @@ class BaseLoginView(BaseView):
 
 
 def base_includeme(config):
-    if config.registry.settings.get('authentication.no_routes'):
+    if config.registry.settings.get('pyramid_auth.no_routes'):
         return
     config.add_view(
         BaseView,
@@ -77,7 +77,7 @@ def base_includeme(config):
 
 
 def login_includeme(config):
-    if config.registry.settings.get('authentication.no_routes'):
+    if config.registry.settings.get('pyramid_auth.no_routes'):
         return
     ViewClass = BaseLoginView
     config.add_view(

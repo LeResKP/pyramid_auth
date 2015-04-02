@@ -3,7 +3,7 @@ from pyramid.authorization import ACLAuthorizationPolicy
 
 def includeme(config):
     settings = config.registry.settings
-    policy = settings.get('authentication.policy') or 'cookie'
+    policy = settings.get('pyramid_auth.policy') or 'cookie'
 
     if policy not in ['cookie', 'remote_user', 'ldap']:
         raise Exception('Policy not supported: %s' % policy)
